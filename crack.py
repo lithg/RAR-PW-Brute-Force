@@ -6,18 +6,28 @@ Author: lithg
 github.com/lithg
 '''
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
-import os
 import webbrowser
-import sys
-import style
 import rarfile
-from colorama import Fore, Back, Style
+import os
+from colorama import Fore
 from datetime import datetime, timedelta
 import time
-import gerador
+import gerador, style
 import threading
+
+os.system('cls')
+print(Fore.RED + ''' 
+___    ____  ____   ____   ______  _____   ______  
+|_   \  /   _||_  _| |_  _|.' ___  ||_   _|.' ___  | 
+  |   \/   |    \ \   / / / .'   \_|  | | / .'   \_| 
+  | |\  /| |     \ \ / /  | |   ____  | | | |        
+ _| |_\/_| |_     \ ' /   \ `.___]  |_| |_\ `.___.'\ 
+|_____||_____|     \_/     `._____.'|_____|`.____ .'    by LITHG
+__    ____  ____   ____   ______  _____   ______  ''')
+
 
 wordlist_txt = 'pt_br_wordlist.txt'
 comb_upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -497,6 +507,7 @@ class Ui_MainWindow(object):
                     else:
                         print(Fore.RED + '[+] Testando: ' + senha + '\n')
                         self.label_tentando_valor.setText(senha.strip())
+                        self.b
                         print(Fore.GREEN + '[*] SENHA ENCONTRADA: {}'.format(senha))
                         self.label_status_valor.setText('[*] SENHA ENCONTRADA: {}'.format(senha))
                         self.label_status_valor.show()
@@ -563,7 +574,7 @@ class Ui_MainWindow(object):
 
                         print(Fore.RED + '[+] Testando: ' + senha + '\n')
                         self.label_tentando_valor.setText(senha)
-                        self.label_status_valor.setStyleSheet('font-size: 12pt; font-family: Courier;, color: green')
+                        self.label_status_valor.setStyleSheet('font-size: 12pt; color: green; background-color: black')
                         print(Fore.GREEN + '[*] SENHA ENCONTRADA: {}'.format(senha))
                         self.label_status_valor.setText('SENHA ENCONTRADA: {}'.format(senha))
                         print(Fore.GREEN + '[*] TENTATIVAS: ' + str(passwd_testados))

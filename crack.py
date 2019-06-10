@@ -7,14 +7,23 @@ github.com/lithg
 '''
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QFileDialog
+import os
+import webbrowser
+import sys
 import style
 import rarfile
 from colorama import Fore, Back, Style
 from datetime import datetime, timedelta
 import time
-from itertools import chain, product, combinations_with_replacement
+import gerador
+import threading
 
-wordlist = 'pt_br_wordlist.txt'
+wordlist_txt = 'pt_br_wordlist.txt'
+comb_upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+comb_lower = 'abcdefghijklmnopqrstuvwxyz'
+comb_numb = '0123456789'
+comb_especial = '!@#$%¨&*()-_=+´`[{}}:>;.,<'
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -343,6 +352,23 @@ class Ui_MainWindow(object):
         self.btn_stop.setIconSize(QtCore.QSize(65,65))
         self.btn_help.setIcon(QtGui.QIcon('img/info.png'))
         self.btn_help.setIconSize(QtCore.QSize(65,65))
+        self.textEdit.setReadOnly(True)
+        self.txtEdt_dict.setReadOnly(True)
+        self.combo_tipo_ataque.addItem("Brute-force")
+        self.combo_tipo_ataque.addItem("Dicionário")
+        self.spinBox.setValue(1)
+        self.label_status_valor.hide()
+        self.label_dur_valor.setStyleSheet('font-size: 12pt; color: green')
+
+
+
+
+        #---------------------- SINGALS ---------------------
+        self.combo_tipo_ataque.currentIndexChanged.connect(self.combobox_tipo)
+        self.btn_open.clicked.connect(self.abrir_rar)
+        self.btn_start.clicked.connect(self.t1)
+        self.btn_about.clicked.connect(self.gitstar)
+
 
 
 
@@ -369,7 +395,7 @@ class Ui_MainWindow(object):
         self.label_tentando.setText(_translate("MainWindow", "Tentando:"))
         self.label_tentando_valor.setText(_translate("MainWindow", "0000"))
         self.label_velocidade_valor.setText(_translate("MainWindow", "0000"))
-        self.label_velocidade.setText(_translate("MainWindow", "Velocidade:"))
+        self.label_velocidade.setText(_translate("MainWindow", "Tentativas:"))
         self.label_dur_valor.setText(_translate("MainWindow", "0d/0h/0m/0s"))
         self.label_dur.setText(_translate("MainWindow", "Duração:"))
         self.label_eta_valor.setText(_translate("MainWindow", "0d/0h/0m/0s"))
@@ -386,8 +412,71 @@ class Ui_MainWindow(object):
         self.actionSair.setText(_translate("MainWindow", "Sair"))
 
 
+    def combobox_tipo(self):
+        if (self.combo_tipo_ataque.currentIndex() == 0):
+            self.tabWidget.setCurrentIndex(0)
 
-    def dict():
+        elif (self.combo_tipo_ataque.currentIndex() == 1):
+            self.tabWidget.setCurrentIndex(1)
+
+    def abrir_rar(self):
+        global fileName
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(None,"Escolha o arquivo .rar", "","RAR (*.rar)" , options=options)
+        if fileName:
+            print(fileName)
+            self.textEdit.setText(fileName)
+
+
+
+    def t1(self):
+        t1 = threading.Thread(target=self.crack)
+        t1.start()
+
+    def t2(self):
+        t2 = threading.Thread(target=self.bruteforce)
+        t2.start()
+
+    def t3(self):
+        t3 = threading.Thread(target=self.stopb)
+        t3.start()
+
+
+    def crack(self):
+        self.label_status_valor.setText("Quebrando senha...")
+        self.label_status_valor.show()
+        global charset
+        global length
+        length = self.spinBox.value()
+        l = []
+        ataque = self.combo_tipo_ataque.currentText()
+        if (ataque == 'Brute-force'):
+
+            if self.cb_numb.isChecked():
+                l.append(comb_numb)
+
+            if self.cb_lower.isChecked():
+                l.append(comb_upper)
+
+            if self.cb_upper.isChecked():
+                l.append(comb_upper)
+
+            if self.cb_especial.isChecked():
+                l.append(comb_especial)
+
+            charset = ''.join(l)
+
+            try:
+                self.t2()
+
+            except:
+                self.label_status_valor.setText('Arquivo inválido ou vazio!')
+                self.label_status_valor.show()
+
+
+
+    def dict(self):
         global tempo
         passwd_testados = 0
         encontrou = False
@@ -403,14 +492,19 @@ class Ui_MainWindow(object):
 
                     except:
                         print(Fore.RED + '[+] Testando: ' + senha.strip())
+                        self.label_tentando_valor.setText(senha.strip())
 
                     else:
                         print(Fore.RED + '[+] Testando: ' + senha + '\n')
+                        self.label_tentando_valor.setText(senha.strip())
                         print(Fore.GREEN + '[*] SENHA ENCONTRADA: {}'.format(senha))
+                        self.label_status_valor.setText('[*] SENHA ENCONTRADA: {}'.format(senha))
+                        self.label_status_valor.show()
                         print(Fore.GREEN + '[*] TENTATIVAS: ' + str(passwd_testados))
+                        self.label_velocidade_valor.setText(str(passwd_testados))
                         end = time.time()  # finaliza contador
                         tempo = end - start
-                        duracao()
+                        self.duracao()
                         encontrou = True
                         break
 
@@ -428,22 +522,28 @@ class Ui_MainWindow(object):
         else:
             print('Arquivo inválido')
 
-    def gerador(charset, maxlength):
-        return (''.join(candidate)
-            for candidate in chain.from_iterable(product(charset, repeat=i)
-            for i in range(1, maxlength + 1)))
 
 
-    def bruteforce():
-
-        lista = list(gerador('0123456789', 4))
+    def bruteforce(self):
+        lista = list(gerador.gerador(charset, length))
         global tempo
+        global stop_flag
+        stop_flag = False
         passwd_testados = 0
         encontrou = False
 
-        if rarfile.is_rarfile('rarf.rar'):
-            with rarfile.RarFile('rarf.rar') as rf:
+        try:
+            fileName
+
+        except NameError:
+            self.label_status_valor.setText('ERR! ARQUIVO NÃO EXISTE')
+
+        if rarfile.is_rarfile(fileName) and fileName != None:
+            with rarfile.RarFile(fileName) as rf:
                 start = time.time()         # inicia contador de duracao
+                self.btn_start.setStyleSheet(style.styleBtnDisabled)
+                self.btn_start.setDisabled(True)
+
                 for senha in lista:
                     senha = ''.join(senha)
 
@@ -451,16 +551,29 @@ class Ui_MainWindow(object):
                         rf.extractall(path='.', members=rf.namelist(), pwd=senha)
 
                     except:
+                        end2 = time.time()
                         print(Fore.RED + '[+] Testando: ' + senha)
+                        self.label_tentando_valor.setText(senha)
+                        self.label_velocidade_valor.setText(str(passwd_testados))
+
+                        self.label_dur_valor.setText(time.strftime("%H:%M:%S", time.gmtime(end2-start)))
+
 
                     else:
+
                         print(Fore.RED + '[+] Testando: ' + senha + '\n')
+                        self.label_tentando_valor.setText(senha)
+                        self.label_status_valor.setStyleSheet('font-size: 12pt; font-family: Courier;, color: green')
                         print(Fore.GREEN + '[*] SENHA ENCONTRADA: {}'.format(senha))
+                        self.label_status_valor.setText('SENHA ENCONTRADA: {}'.format(senha))
                         print(Fore.GREEN + '[*] TENTATIVAS: ' + str(passwd_testados))
+                        self.label_velocidade_valor.setText(str(passwd_testados))
                         end = time.time()  # finaliza contador
                         tempo = end - start
-                        duracao()
+                        self.duracao()
                         encontrou = True
+                        self.btn_start.setStyleSheet(style.styleBtn)
+                        self.btn_start.setDisabled(False)
                         break
 
                     passwd_testados += 1
@@ -474,13 +587,26 @@ class Ui_MainWindow(object):
                         print(Fore.LIGHTBLUE_EX + 'Arquivo: ' + f.filename)
                         print(Fore.LIGHTBLUE_EX + 'Tamanho: ' + str(f.file_size) + ' KB\n')
 
+        else:
+            self.label_status_valor.setText('ERR! ARQUIVO INVÁLIDO')
 
-    def duracao():
+    def duracao(self):
         sec = timedelta(seconds=tempo)
         d = datetime(1,1,1) + sec
 
         print("Duração: %dd:%dh:%dm:%ds" % (d.day-1, d.hour, d.minute, d.second))
         print()
+        self.label_dur_valor.setStyleSheet('font-size: 12pt; color: green')
+        self.label_dur_valor.setText("%dd:%dh:%dm:%ds" % (d.day-1, d.hour, d.minute, d.second))
+
+    def sair(self):
+        sys.exit()
+
+    def stopb(self):
+        stop_flag = True
+
+    def gitstar(self):
+        webbrowser.open('https://github.com/lithg/RAR-PW-Brute-Force')
 
 
 if __name__ == "__main__":

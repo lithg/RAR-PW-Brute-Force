@@ -369,6 +369,8 @@ class Ui_MainWindow(object):
         self.spinBox.setValue(1)
         self.label_status_valor.hide()
         self.label_dur_valor.setStyleSheet('font-size: 12pt; color: green')
+        self.txtEdt_dict.setText('wordlist.txt')
+        self.txtEdt_dict.setReadOnly(True)
 
 
 
@@ -553,7 +555,6 @@ class Ui_MainWindow(object):
             with rarfile.RarFile(fileName) as rf:
                 start = time.time()         # inicia contador de duracao
                 self.btn_start.setStyleSheet(style.styleBtnDisabled)
-                self.btn_start.setDisabled(True)
 
                 for senha in lista:
                     senha = ''.join(senha)
@@ -584,7 +585,6 @@ class Ui_MainWindow(object):
                         self.duracao()
                         encontrou = True
                         self.btn_start.setStyleSheet(style.styleBtn)
-                        self.btn_start.setDisabled(False)
                         break
 
                     passwd_testados += 1

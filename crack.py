@@ -299,14 +299,14 @@ class Ui_MainWindow(object):
         self.label_status.setFont(font)
         self.label_status.setObjectName("label_status")
         self.label_status_valor = QtWidgets.QLabel(self.centralwidget)
-        self.label_status_valor.setGeometry(QtCore.QRect(340, 370, 221, 21))
+        self.label_status_valor.setGeometry(QtCore.QRect(340, 370, 300, 21))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.label_status_valor.setFont(font)
         self.label_status_valor.setStyleSheet("color: red")
         self.label_status_valor.setObjectName("label_status_valor")
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
-        self.progressBar.setGeometry(QtCore.QRect(257, 410, 331, 23))
+        self.progressBar.setGeometry(QtCore.QRect(257, 410, 700, 23))
         self.progressBar.setProperty("value", 24)
         self.progressBar.setObjectName("progressBar")
         self.line_17 = QtWidgets.QFrame(self.centralwidget)
@@ -369,7 +369,7 @@ class Ui_MainWindow(object):
         self.spinBox.setValue(1)
         self.label_status_valor.hide()
         self.label_dur_valor.setStyleSheet('font-size: 12pt; color: green')
-        self.txtEdt_dict.setText('wordlist.txt')
+        self.txtEdt_dict.setText('pt_br_wordlist.txt')
         self.txtEdt_dict.setReadOnly(True)
 
 
@@ -380,6 +380,8 @@ class Ui_MainWindow(object):
         self.btn_open.clicked.connect(self.abrir_rar)
         self.btn_start.clicked.connect(self.t1)
         self.btn_about.clicked.connect(self.gitstar)
+        self.btn_buscar.clicked.connect(self.abrir_dict)
+        self.cb_dict_padrao.clicked.connect(self.state_changed)
 
 
 
@@ -402,7 +404,7 @@ class Ui_MainWindow(object):
         self.label_dict_path.setText(_translate("MainWindow", "Path do arquivo: "))
         self.btn_buscar.setText(_translate("MainWindow", "BUSCAR"))
         self.cb_all_comb.setText(_translate("MainWindow", "Tentar todas as combinações maiúscula / minúscula"))
-        self.cb_dict_padrao.setText(_translate("MainWindow", "Usar dicionário padrão (wordlist.txt)"))
+        self.cb_dict_padrao.setText(_translate("MainWindow", "Usar dicionário padrão (pt_br_wordlist.txt)"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.dict_tab), _translate("MainWindow", "Dicionário"))
         self.label_tentando.setText(_translate("MainWindow", "Tentando:"))
         self.label_tentando_valor.setText(_translate("MainWindow", "0000"))
@@ -423,6 +425,18 @@ class Ui_MainWindow(object):
         self.actionStop.setText(_translate("MainWindow", "Stop"))
         self.actionSair.setText(_translate("MainWindow", "Sair"))
 
+    def state_changed(self):
+        if self.cb_dict_padrao.isChecked():
+            self.txtEdt_dict.setDisabled(True)
+            self.txtEdt_dict.setText('pt_br_wordlist.txt')
+            self.btn_buscar.setDisabled(True)
+            self.btn_buscar.setStyleSheet(style.styleBtnDisabled)
+
+        else:
+            self.txtEdt_dict.setDisabled(False)
+            self.btn_buscar.setDisabled(False)
+            self.btn_buscar.setStyleSheet(style.styleBtn)
+
 
     def combobox_tipo(self):
         if (self.combo_tipo_ataque.currentIndex() == 0):
@@ -440,6 +454,16 @@ class Ui_MainWindow(object):
             print(fileName)
             self.textEdit.setText(fileName)
 
+    def abrir_dict(self):
+        global dictName
+        dictName = 'padrao'
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        dictName, _ = QFileDialog.getOpenFileName(None,"Escolha o wordlist .txt", "","TXT (*.txt)" , options=options)
+        if dictName:
+            print(dictName)
+            self.txtEdt_dict.setText(dictName)
+
 
 
     def t1(self):
@@ -453,6 +477,10 @@ class Ui_MainWindow(object):
     def t3(self):
         t3 = threading.Thread(target=self.stopb)
         t3.start()
+
+    def t4(self):
+        t4 = threading.Thread(target=self.dict)
+        t4.start()
 
 
     def crack(self):
@@ -486,6 +514,15 @@ class Ui_MainWindow(object):
                 self.label_status_valor.setText('Arquivo inválido ou vazio!')
                 self.label_status_valor.show()
 
+        elif (ataque == 'Dicionário'):
+            try:
+                self.t4()
+
+            except:
+                self.label_status_valor.setText('Arquivo inválido ou vazio!')
+                self.label_status_valor.show()
+
+
 
 
     def dict(self):
@@ -493,8 +530,20 @@ class Ui_MainWindow(object):
         passwd_testados = 0
         encontrou = False
 
-        if rarfile.is_rarfile('rarf.rar'):
-            with rarfile.RarFile('rarf.rar') as rf:
+        if (self.txtEdt_dict.toPlainText() != 'pt_br_wordlist.txt'):
+            wordlist_txt = self.txtEdt_dict.toPlainText()
+
+        else:
+            wordlist_txt = 'pt_br_wordlist.txt'
+
+        try:
+            fileName
+
+        except NameError:
+            self.label_status_valor.setText('ERR! ARQUIVO NÃO EXISTE')
+
+        if rarfile.is_rarfile(fileName) and fileName != None:
+            with rarfile.RarFile(fileName) as rf:
                 wordlist = open(wordlist_txt, 'r')
                 start = time.time()         # inicia contador de duracao
                 for senha in wordlist:
@@ -505,32 +554,30 @@ class Ui_MainWindow(object):
                     except:
                         print(Fore.RED + '[+] Testando: ' + senha.strip())
                         self.label_tentando_valor.setText(senha.strip())
+                        self.label_velocidade_valor.setText(str(passwd_testados))
 
                     else:
-                        print(Fore.RED + '[+] Testando: ' + senha + '\n')
+                        print(Fore.RED + '[+] Testando: ' + senha.strip() + '\n')
                         self.label_tentando_valor.setText(senha.strip())
-                        self.b
-                        print(Fore.GREEN + '[*] SENHA ENCONTRADA: {}'.format(senha))
-                        self.label_status_valor.setText('[*] SENHA ENCONTRADA: {}'.format(senha))
-                        self.label_status_valor.show()
+                        self.label_status_valor.setStyleSheet('font-size: 12pt; color: green; background-color: black')
+                        print(Fore.GREEN + '[*] SENHA ENCONTRADA: {}'.format(senha.strip()))
+                        self.label_status_valor.setText('SENHA ENCONTRADA: {}'.format(senha.strip()))
                         print(Fore.GREEN + '[*] TENTATIVAS: ' + str(passwd_testados))
                         self.label_velocidade_valor.setText(str(passwd_testados))
                         end = time.time()  # finaliza contador
                         tempo = end - start
                         self.duracao()
                         encontrou = True
+                        self.btn_start.setStyleSheet(style.styleBtn)
                         break
 
                     passwd_testados += 1
 
-                if not encontrou:
-                    print(Fore.LIGHTRED_EX + '[*] SENHA NÃO ENCONTRADA')
 
-                else:
 
-                    for f in rf.infolist():
-                        print(Fore.LIGHTBLUE_EX + 'Arquivo: ' + f.filename)
-                        print(Fore.LIGHTBLUE_EX + 'Tamanho: ' + str(f.file_size) + ' KB\n')
+                for f in rf.infolist():
+                    print(Fore.LIGHTBLUE_EX + 'Arquivo: ' + f.filename)
+                    print(Fore.LIGHTBLUE_EX + 'Tamanho: ' + str(f.file_size) + ' KB\n')
 
         else:
             print('Arquivo inválido')
@@ -572,7 +619,6 @@ class Ui_MainWindow(object):
 
 
                     else:
-
                         print(Fore.RED + '[+] Testando: ' + senha + '\n')
                         self.label_tentando_valor.setText(senha)
                         self.label_status_valor.setStyleSheet('font-size: 12pt; color: green; background-color: black')

@@ -1,3 +1,5 @@
+# Uso: btn.setStyleSheet(style.styleBtn) 
+
 styleCheckRed = "QCheckBox::indicator {width: 30px;height: 30px;border-radius: 7px;}QCheckBox:indicator:checked {background-color:   red;border:   2px solid white;} QCheckBox::indicator:unchecked {image: url(img/red_d.png);border:   2px solid white;}"
 
 styleCheckBlue = "QCheckBox::indicator {width: 30px;height: 30px;border-radius: 7px;}QCheckBox:indicator:checked {background-color:   blue;border:   2px solid white;} QCheckBox::indicator:unchecked {image: url(img/nao.png);border:   2px solid white;}"
